@@ -29,6 +29,9 @@ int playerPosX = (TFT_WIDTH / 2) - (30 / 2); // Mittelpunkt im Spielfeld - Initi
 
 int inDirectionX = 0; // neue Spieler-Pos X?
 
+int ballPosX = (TFT_WIDTH / 2) - 5;
+int ballPosY = 115;
+
 int playerX1Coll = playerPosX;
 int playerX2Coll = playerPosX + 30;
 
@@ -56,7 +59,7 @@ void setup() {
 void loop() {
   // Lese Pins
   //Serial.println(analogRead(JOYSTICK_X));
-  inDirectionX = analogRead(JOYSTICK_X);
+  inDirectionX = 4095 - analogRead(JOYSTICK_X);
   //Serial.println(analogRead(JOYSTICK_Y));
   //Serial.println(analogRead(JOYSTICK_B));
 
@@ -94,9 +97,9 @@ void drawBricks(uint16_t color) {
 }
 
 void drawBall() {
-  int posY = 50 + 60*(-millis()%1000)/1000.0f;
-  int posX = 50 + 60*(-millis()%1000)/1000.0f;
-  tft.fillCircle(posX, posY, 3, ST77XX_RED);
+  //int posY = 50 + 60*(-millis()%1000)/1000.0f;
+  //int posX = 50 + 60*(-millis()%1000)/1000.0f;
+  tft.fillCircle(ballPosX, ballPosY, 3, ST77XX_RED);
 }
 
 void drawPlayer(uint16_t color) {
