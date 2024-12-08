@@ -24,16 +24,21 @@
 const int TFT_WIDTH = 160;
 const int TFT_HEIGH = 128;
 
+//
 // Globale Variablen
+//
 int playerPosX = (TFT_WIDTH / 2) - (30 / 2); // Mittelpunkt im Spielfeld - Initial
 
-int inDirectionX = 0; // neue Spieler-Pos X?
+int inDirectionX = 0;
 
 int ballPosX = (TFT_WIDTH / 2) - 5;
 int ballPosY = 115;
 
 int playerX1Coll = playerPosX;
 int playerX2Coll = playerPosX + 30;
+
+bool gameIsStarted = false;
+bool ballIsMoving = false;
 
 //
 SPIClass tftSPI = SPIClass(HSPI);
@@ -49,30 +54,73 @@ void setup() {
   tft.setSPISpeed(40000000);
 
   // Pulldown-Mode beim ESP32 einschalten
-  pinMode(17, INPUT_PULLDOWN);
-  pinMode(16, INPUT_PULLDOWN);
-  pinMode(15, INPUT_PULLDOWN);
-  pinMode(14, INPUT_PULLDOWN);
+  pinMode(BUTTON_RIGHT, INPUT_PULLDOWN);
+  pinMode(BUTTON_DOWN, INPUT_PULLDOWN);
+  pinMode(BUTTON_UP, INPUT_PULLDOWN);
+  pinMode(BUTTON_LEFT, INPUT_PULLDOWN);
+
+  // Setzt einmalig Display zurück
+  tft.fillScreen(ST77XX_WHITE);
+
+  // zeigt Startbildschirm an
+  showStartScreen();
 }
 
 // Hauptschleife
 void loop() {
-  // Lese Pins
-  //Serial.println(analogRead(JOYSTICK_X));
-  inDirectionX = 4095 - analogRead(JOYSTICK_X);
-  //Serial.println(analogRead(JOYSTICK_Y));
-  //Serial.println(analogRead(JOYSTICK_B));
+  if (digitalRead(BUTTON_RIGHT) == 1)
+  {
+    gameIsStarted = true;
+  }
+  if (gameIsStarted == true)
+  {
+    updateDisplay();
+    // Lese Pins
+    //Serial.println(analogRead(JOYSTICK_X));
+    inDirectionX = 4095 - analogRead(JOYSTICK_X);
+    //Serial.println(analogRead(JOYSTICK_Y));
+    //Serial.println(analogRead(JOYSTICK_B));
 
-  updateDisplay();
-  drawBricks(ST77XX_BLUE);
-  drawPlayer(ST77XX_BLACK);
-  calcPlayerCollider();
-  drawBall();
+    drawBricks(ST77XX_BLUE);
 
-  delay(30);
+    drawPlayer(ST77XX_BLACK);
+    calcPlayerCollider();
+    drawBall();
+
+    while (ballIsMoving == false)
+    {
+      if (digitalRead(BUTTON_UP) == 1) 
+      {
+        ballIsMoving = true;
+      }
+      Serial.println(ballIsMoving);
+    }
+
+    delay(30);
+  }
 }
 
+//
 // Funktionen
+//
+
+// Allgemeine Funktionen
+void showStartScreen() {
+  tft.setRotation(1);
+  tft.setCursor(30, (TFT_HEIGH  / 2));
+  tft.setTextColor(ST77XX_BLACK);
+  tft.setTextSize(1.5);
+  tft.println("Breaking Out Inc.");
+  tft.setCursor(30, (TFT_HEIGH  / 2) + 10);
+  tft.setTextColor(ST77XX_BLACK);
+  tft.setTextSize(1.5);
+  tft.println("Press BUTTON-RIGHT");
+  tft.setCursor(30, (TFT_HEIGH  / 2) + 20);
+  tft.setTextColor(ST77XX_BLACK);
+  tft.setTextSize(1.5);
+  tft.println("to start!");
+}
+
 void updateDisplay() {
   tft.setRotation(1);
   tft.fillScreen(ST77XX_WHITE);
@@ -82,34 +130,39 @@ void updateDisplay() {
   tft.print("Breaking Out Inc.");
 }
 
+// Ingame Funktionen
 void drawBricks(uint16_t color) {
-  tft.fillRect(5, 50, 10, 5, color);
-  tft.fillRect(20, 50, 10, 5, color);
-  tft.fillRect(35, 50, 10, 5, color);
-  tft.fillRect(50, 50, 10, 5, color);
-  tft.fillRect(65, 50, 10, 5, color);
-  tft.fillRect(80, 50, 10, 5, color);
-  tft.fillRect(95, 50, 10, 5, color);
-  tft.fillRect(110, 50, 10, 5, color);
-  tft.fillRect(125, 50, 10, 5, color);
-  tft.fillRect(140, 50, 10, 5, color);
-  tft.fillRect(110, 50, 10, 5, color);
+  tft.fillRect(12, 50, 10, 5, color);
+  tft.fillRect(27, 50, 10, 5, color);
+  tft.fillRect(42, 50, 10, 5, color);
+  tft.fillRect(57, 50, 10, 5, color);
+  tft.fillRect(72, 50, 10, 5, color);
+  tft.fillRect(87, 50, 10, 5, color);
+  tft.fillRect(102, 50, 10, 5, color);
+  tft.fillRect(117, 50, 10, 5, color);
+  tft.fillRect(132, 50, 10, 5, color);
+  //tft.fillRect(132, 50, 10, 5, color);
+  //tft.fillRect(137, 50, 10, 5, color);
 }
 
 void drawBall() {
-  //int posY = 50 + 60*(-millis()%1000)/1000.0f;
-  //int posX = 50 + 60*(-millis()%1000)/1000.0f;
   tft.fillCircle(ballPosX, ballPosY, 3, ST77XX_RED);
+  if (ballIsMoving == true)
+  {
+    ballPosX = ballPosX + 60*(-millis()%1000)/1000.0f;
+    ballPosY = ballPosY + 60*(-millis()%1000)/1000.0f;
+  }
 }
 
 void drawPlayer(uint16_t color) {
   tft.setRotation(1);
-
-  // Setzt den Spieler wieder in die Mitte des Spielfelds zurück
-  playerPosX = (TFT_WIDTH / 2) - (30 / 2);
-
   if (inDirectionX < 1800 || inDirectionX > 1900)
     playerPosX = 1 + ((4096 - inDirectionX) / 32); //1 + ((4096 - inDirectionX) / 80) * (millis()%tValue)/(tValue * 1.0f)
+  else
+  {
+    // Setzt den Spieler wieder in die Mitte des Spielfelds zurück
+    playerPosX = (TFT_WIDTH / 2) - (30 / 2);
+  }
   tft.fillRect(playerPosX, 120, 30, 5, color);
 }
 
@@ -125,6 +178,6 @@ void playerControl() {
 void calcPlayerCollider() {
   playerX1Coll = playerPosX;
   playerX2Coll = playerPosX + 30;
-  Serial.println(playerX1Coll);
-  Serial.println(playerX2Coll);
+  //Serial.println(playerX1Coll);
+  //Serial.println(playerX2Coll);
 }
