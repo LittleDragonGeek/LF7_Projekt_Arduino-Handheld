@@ -2,6 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
+#include <string.h>
 
 // Definiere Pins an ESP32/Arduino
 #define TFT_MOSI  23
@@ -28,14 +29,15 @@ const int TFT_HEIGH = 128;
 // Globale Variablen
 //
 int playerPosX = (TFT_WIDTH / 2) - (30 / 2); // Mittelpunkt im Spielfeld - Initial
+int playerX1Coll = playerPosX;
+int playerX2Coll = playerPosX + 30;
 
-int inDirectionX = 0;
+int inJYSTDirectionX = 0;
 
+// Ball Start-Position
 int ballPosX = (TFT_WIDTH / 2) - 5;
 int ballPosY = 115;
 
-int playerX1Coll = playerPosX;
-int playerX2Coll = playerPosX + 30;
 
 bool gameIsStarted = false;
 bool ballIsMoving = false;
@@ -77,7 +79,7 @@ void loop() {
     updateDisplay();
     // Lese Pins
     //Serial.println(analogRead(JOYSTICK_X));
-    inDirectionX = 4095 - analogRead(JOYSTICK_X);
+    inJYSTDirectionX = 4095 - analogRead(JOYSTICK_X);
     //Serial.println(analogRead(JOYSTICK_Y));
     //Serial.println(analogRead(JOYSTICK_B));
 
@@ -147,31 +149,29 @@ void drawBricks(uint16_t color) {
 
 void drawBall() {
   tft.fillCircle(ballPosX, ballPosY, 3, ST77XX_RED);
+  Serial.println((String)"x-Pos: " + ballPosX);
+  Serial.println((String)"y-Pos: " + ballPosY);
   if (ballIsMoving == true)
   {
-    ballPosX = ballPosX + 60*(-millis()%1000)/1000.0f;
-    ballPosY = ballPosY + 60*(-millis()%1000)/1000.0f;
+    ballPosX = (TFT_WIDTH / 2) + 60*(-millis()%1000)/1000.0f;
+    ballPosY = 70 + 60*(-millis()%1000)/1000.0f;
   }
+}
+
+void ballMovement() {
+
 }
 
 void drawPlayer(uint16_t color) {
   tft.setRotation(1);
   if (inDirectionX < 1800 || inDirectionX > 1900)
-    playerPosX = 1 + ((4096 - inDirectionX) / 32); //1 + ((4096 - inDirectionX) / 80) * (millis()%tValue)/(tValue * 1.0f)
+    playerPosX = 1 + ((4096 - inDirectionX) / 32); 
   else
   {
     // Setzt den Spieler wieder in die Mitte des Spielfelds zurück
     playerPosX = (TFT_WIDTH / 2) - (30 / 2);
   }
   tft.fillRect(playerPosX, 120, 30, 5, color);
-}
-
-void playerControl() {
-  // X < 1500 = -x
-  // X > 2500 = +x
-  // Bewegung bis zur Koordinate x = 1
-  int posX = 1 + 0*(-millis()%1000)/1000.0f;
-  //tft.fillRect(posX, 120, 30, 5, color);
 }
 
 // Berechnet die zwei oberen x-Eckpunkte, um die Hitbox des Spielers zu ermitteln
